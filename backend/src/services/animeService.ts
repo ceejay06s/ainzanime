@@ -461,6 +461,39 @@ export const animeService = {
   },
 
   /**
+   * Helper to query AniList by idMal first (for MAL ids), then fallback to native AniList id
+   */
+  async queryAniList(query: string, id: number) {
+    // 1. Try idMal first (standard MAL id)
+    try {
+      const response = await anilistAxios.post('', {
+        query,
+        variables: { idMal: id }
+      });
+      if (response.data?.data?.Media) {
+        return response.data.data.Media;
+      }
+    } catch {
+      // ignore
+    }
+
+    // 2. Try native AniList id
+    try {
+      const response = await anilistAxios.post('', {
+        query,
+        variables: { id }
+      });
+      if (response.data?.data?.Media) {
+        return response.data.data.Media;
+      }
+    } catch {
+      // ignore
+    }
+
+    return null;
+  },
+
+  /**
    * Get single anime details by ID (either MAL ID or AniList ID)
    */
   async getAnimeDetails(id: number) {
@@ -469,13 +502,8 @@ export const animeService = {
     if (cached) return cached;
 
     try {
-      // First try AniList with id or idMal
-      const response = await anilistAxios.post('', {
-        query: ANILIST_DETAILS_QUERY,
-        variables: id > 50000 ? { id } : { idMal: id }
-      });
-
-      const media = response.data?.data?.Media;
+      // First try AniList with idMal then id
+      const media = await this.queryAniList(ANILIST_DETAILS_QUERY, id);
       if (media) {
         const mapped = this.mapAniListToJikan(media);
         const result = { data: mapped };
@@ -511,16 +539,7 @@ export const animeService = {
 
     try {
       // Fetch AniList data with streaming episodes
-      let anilistMedia: any = null;
-      try {
-        const response = await anilistAxios.post('', {
-          query: ANILIST_EPISODES_QUERY,
-          variables: id > 50000 ? { id } : { idMal: id }
-        });
-        anilistMedia = response.data?.data?.Media;
-      } catch (err: any) {
-        console.warn(`AniList episodes query failed for ${id}:`, err.message);
-      }
+      const anilistMedia: any = await this.queryAniList(ANILIST_EPISODES_QUERY, id);
 
       const totalEpisodes = anilistMedia?.episodes || anilistMedia?.nextAiringEpisode?.episode || 12;
       const title = anilistMedia?.title?.english || anilistMedia?.title?.romaji || 'Anime';
@@ -616,61 +635,109 @@ export const animeService = {
 
     try {
       // Get anime details for title
-      const details: any = await this.getAnimeDetails(animeId);
-      const anime = details?.data;
-      const title = anime?.title || 'Anime';
+      let title = 'Anime';
+      try {
+        const details: any = await this.getAnimeDetails(animeId);
+        title = details?.data?.title || 'Anime';
+      } catch {
+        // Fallback
+      }
       const miruroSearchUrl = `https://www.miruro.tv/search?q=${encodeURIComponent(title)}`;
+      const vidsrcEmbedUrl = `https://vidsrc.me/embed/anime?id=${animeId}&ep=${episode}`;
+      const twoEmbedUrl = `https://2embed.cc/embed/anime/${animeId}/${episode}`;
 
-      // Generate streaming servers based on Miruro's known infrastructure
-      // From SSR_CONFIG: icarus (sun), anikoto (bee) providers with sub/dub/raw variants
+      // Streaming servers: In-app iframe embeddable players + Miruro direct stream variants
       const servers = [
         {
-          id: 'icarus-sub',
-          name: 'Icarus',
-          label: 'Sun Server',
+          id: 'vidsrc-embed',
+          name: 'VidSrc HD',
+          label: 'In-App Player (1080p)',
           type: 'sub' as const,
+          quality: '1080p',
+          isEmbeddable: true,
+          embedUrl: vidsrcEmbedUrl,
+          url: vidsrcEmbedUrl,
+          active: true
+        },
+        {
+          id: '2embed',
+          name: '2Embed Multi',
+          label: 'In-App Player (Multi-Host)',
+          type: 'sub' as const,
+          quality: '1080p',
+          isEmbeddable: true,
+          embedUrl: twoEmbedUrl,
+          url: twoEmbedUrl,
+          active: true
+        },
+        {
+          id: 'icarus-sub',
+          name: 'Miruro Sun',
+          label: 'Direct Stream (Icarus)',
+          type: 'sub' as const,
+          quality: '1080p',
+          isEmbeddable: false,
           url: miruroSearchUrl,
           active: true
         },
         {
           id: 'icarus-dub',
-          name: 'Icarus',
-          label: 'Sun Server (Dub)',
+          name: 'Miruro Sun (Dub)',
+          label: 'Direct Stream (Icarus Dub)',
           type: 'dub' as const,
+          quality: '1080p',
+          isEmbeddable: false,
           url: miruroSearchUrl,
           active: true
         },
         {
           id: 'anikoto-sub',
-          name: 'Anikoto',
-          label: 'Bee Server',
+          name: 'Miruro Bee',
+          label: 'Direct Stream (Anikoto)',
           type: 'sub' as const,
+          quality: '1080p',
+          isEmbeddable: false,
           url: miruroSearchUrl,
           active: true
         },
         {
           id: 'anikoto-dub',
-          name: 'Anikoto',
-          label: 'Bee Server (Dub)',
+          name: 'Miruro Bee (Dub)',
+          label: 'Direct Stream (Anikoto Dub)',
           type: 'dub' as const,
+          quality: '1080p',
+          isEmbeddable: false,
           url: miruroSearchUrl,
           active: true
         },
         {
-          id: 'external-sub',
-          name: 'External',
-          label: 'External Player',
+          id: 'animepahe-sub',
+          name: 'AnimePahe',
+          label: 'Backup Stream (Sub)',
           type: 'sub' as const,
-          url: miruroSearchUrl,
+          quality: '1080p / 720p',
+          isEmbeddable: false,
+          url: `https://animepahe.ru/?q=${encodeURIComponent(`${title} episode ${episode}`)}`,
+          active: true
+        },
+        {
+          id: 'animepahe-dub',
+          name: 'AnimePahe (Dub)',
+          label: 'Backup Stream (Dub)',
+          type: 'dub' as const,
+          quality: '1080p / 720p',
+          isEmbeddable: false,
+          url: `https://animepahe.ru/?q=${encodeURIComponent(`${title} dub episode ${episode}`)}`,
           active: true
         }
       ];
 
       const result = {
         servers,
-        defaultServer: 'icarus-sub',
-        embedUrl: miruroSearchUrl,
+        defaultServer: 'vidsrc-embed',
+        embedUrl: vidsrcEmbedUrl,
         miruroUrl: miruroSearchUrl,
+        animepaheUrl: `https://animepahe.ru/?q=${encodeURIComponent(title)}`,
         episode: {
           number: episode,
           animeId,
@@ -700,12 +767,7 @@ export const animeService = {
     if (cached) return cached;
 
     try {
-      const response = await anilistAxios.post('', {
-        query: ANILIST_DETAILS_QUERY,
-        variables: id > 50000 ? { id } : { idMal: id }
-      });
-
-      const media = response.data?.data?.Media;
+      const media = await this.queryAniList(ANILIST_DETAILS_QUERY, id);
       const characterNodes = media?.characters?.nodes || [];
 
       const characters = characterNodes.map((char: any) => ({

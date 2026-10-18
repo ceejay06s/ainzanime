@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Anime, Manga, Episode, Chapter } from '../types';
+import { Anime, Manga, Chapter, StreamingSource, AnimeEpisodesResponse } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -23,7 +23,10 @@ export const animeService = {
     api.get<{ data: Anime }>(`/anime/${id}`),
   
   getEpisodes: (id: number, page = 1) =>
-    api.get<{ data: Episode[] }>(`/anime/${id}/episodes`, { params: { page } }),
+    api.get<AnimeEpisodesResponse>(`/anime/${id}/episodes`, { params: { page } }),
+
+  getStreamingServers: (id: number, episode = 1) =>
+    api.get<{ data: StreamingSource }>(`/anime/${id}/episodes/${episode}/servers`),
   
   getCharacters: (id: number) =>
     api.get(`/anime/${id}/characters`),

@@ -1,8 +1,8 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, Router } from 'express';
 import { animeService } from '../services/animeService';
 import { apiLimiter } from '../middleware/rateLimit';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 router.use(apiLimiter);
 
@@ -76,6 +76,30 @@ router.get('/:id/episodes', async (req: Request, res: Response) => {
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch episodes' });
+  }
+});
+
+// Streaming sources and servers for anime episode
+router.get('/:id/episodes/:episode/servers', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const episode = parseInt(req.params.episode) || 1;
+    const data = await animeService.getStreamingSources(id, episode);
+    res.json({ data });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch streaming servers' });
+  }
+});
+
+// Alias for servers
+router.get('/:id/servers/:episode', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const episode = parseInt(req.params.episode) || 1;
+    const data = await animeService.getStreamingSources(id, episode);
+    res.json({ data });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch streaming servers' });
   }
 });
 

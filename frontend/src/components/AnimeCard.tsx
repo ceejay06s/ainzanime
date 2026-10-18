@@ -1,5 +1,6 @@
 import React from 'react';
-import { Star, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Star, Clock, Play } from 'lucide-react';
 import { Anime } from '../types';
 
 interface AnimeCardProps {
@@ -8,6 +9,14 @@ interface AnimeCardProps {
 }
 
 export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, onClick }) => {
+  const navigate = useNavigate();
+
+  const handleQuickWatch = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/watch/${anime.mal_id}/1`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div
       onClick={() => onClick?.(anime.mal_id)}
@@ -30,7 +39,18 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, onClick }) => {
             e.currentTarget.src = 'https://via.placeholder.com/225x318?text=No+Image';
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-0 group-hover:opacity-80 transition-opacity duration-300" />
+        
+        {/* Hover backdrop gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-90 transition-opacity duration-300 flex items-center justify-center">
+          {/* Quick Stream Play Button */}
+          <button
+            onClick={handleQuickWatch}
+            title="Stream Episode 1"
+            className="p-3.5 rounded-full bg-red-600 hover:bg-red-500 text-white shadow-xl shadow-red-950/60 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 flex items-center justify-center ring-4 ring-red-600/30"
+          >
+            <Play className="h-5 w-5 fill-white text-white ml-0.5" />
+          </button>
+        </div>
       </div>
 
       <div className="p-3.5 flex flex-col flex-1 justify-between">

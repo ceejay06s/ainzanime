@@ -153,7 +153,10 @@ export interface StreamingServer {
   label: string;
   type: 'sub' | 'dub' | 'raw';
   url: string;
+  embedUrl?: string;
+  quality?: string;
   active: boolean;
+  isEmbeddable?: boolean;
 }
 
 export interface StreamingSource {
@@ -161,6 +164,36 @@ export interface StreamingSource {
   defaultServer: string;
   embedUrl: string;
   miruroUrl: string;
+  animepaheUrl?: string;
+  episode?: {
+    number: number;
+    animeId: number;
+    title: string;
+  };
+}
+
+export interface AnimeEpisodesResponse {
+  data: Episode[];
+  anime?: {
+    mal_id: number;
+    title: string;
+    title_japanese?: string;
+    totalEpisodes?: number;
+    coverImage?: string;
+    bannerImage?: string;
+    status?: string;
+    duration?: number;
+  };
+  pagination?: {
+    last_visible_page: number;
+    has_next_page: boolean;
+    current_page: number;
+    items: {
+      count: number;
+      total: number;
+      per_page: number;
+    };
+  };
 }
 
 export interface Chapter {

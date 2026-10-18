@@ -6,6 +6,7 @@ import { AnimePage } from './pages/AnimePage';
 import { MangaPage } from './pages/MangaPage';
 import { TrendingPage } from './pages/TrendingPage';
 import { LibraryPage } from './pages/LibraryPage';
+import { WatchPage } from './pages/WatchPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,7 +20,7 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <div className="min-h-screen bg-slate-950">
           <Header />
           <main className="flex-1 pb-16">
@@ -29,6 +30,8 @@ function App() {
               <Route path="/manga" element={<MangaPage />} />
               <Route path="/trending" element={<TrendingPage />} />
               <Route path="/library" element={<LibraryPage />} />
+              <Route path="/watch/:id" element={<WatchPage />} />
+              <Route path="/watch/:id/:episode" element={<WatchPage />} />
             </Routes>
           </main>
 

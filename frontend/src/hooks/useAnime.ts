@@ -45,10 +45,23 @@ export const useAnimeEpisodes = (id: number, page = 1) => {
     queryKey: ['anime-episodes', id, page],
     queryFn: async () => {
       const response = await animeService.getEpisodes(id, page);
-      return response.data.data;
+      return response.data;
     },
     enabled: !!id,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
+  });
+};
+
+export const useStreamingServers = (id: number, episode = 1) => {
+  return useQuery({
+    queryKey: ['anime-streaming-servers', id, episode],
+    queryFn: async () => {
+      const response = await animeService.getStreamingServers(id, episode);
+      return response.data.data;
+    },
+    enabled: !!id && episode > 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 };

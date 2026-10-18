@@ -1,8 +1,8 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, Router } from 'express';
 import { mangadexService } from '../services/mangadexService';
 import { apiLimiter } from '../middleware/rateLimit';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 router.use(apiLimiter);
 

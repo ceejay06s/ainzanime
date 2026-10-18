@@ -126,6 +126,7 @@ export interface Manga {
 
 export interface Episode {
   mal_id: number;
+  number: number;
   url: string;
   images: {
     jpg: {
@@ -141,6 +142,25 @@ export interface Episode {
   title: string;
   title_romanji: string;
   title_japanese: string;
+  thumbnail?: string;
+  streamUrl?: string;
+  site?: string;
+}
+
+export interface StreamingServer {
+  id: string;
+  name: string;
+  label: string;
+  type: 'sub' | 'dub' | 'raw';
+  url: string;
+  active: boolean;
+}
+
+export interface StreamingSource {
+  servers: StreamingServer[];
+  defaultServer: string;
+  embedUrl: string;
+  miruroUrl: string;
 }
 
 export interface Chapter {

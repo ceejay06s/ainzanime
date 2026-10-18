@@ -22,7 +22,7 @@ function App() {
       <Router>
         <div className="min-h-screen bg-slate-950">
           <Header />
-          <main>
+          <main className="flex-1 pb-16">
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/anime" element={<AnimePage />} />
@@ -31,6 +31,17 @@ function App() {
               <Route path="/library" element={<LibraryPage />} />
             </Routes>
           </main>
+
+          <footer className="border-t border-slate-900 bg-slate-950/90 py-8 text-center text-xs text-slate-500">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="font-heading font-medium text-slate-400">
+                Ainz<span className="text-red-500">Anime</span> © {new Date().getFullYear()} — Powered by Jikan & MangaDex API
+              </p>
+              <p className="text-slate-500">
+                Crafted for anime & manga enthusiasts
+              </p>
+            </div>
+          </footer>
         </div>
       </Router>
     </QueryClientProvider>

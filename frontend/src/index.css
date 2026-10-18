@@ -2,33 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  @apply transition-colors duration-200;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-slate-950 text-slate-100 font-sans antialiased selection:bg-red-600 selection:text-white min-h-screen;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
 }
 
-body {
-  @apply bg-slate-950 text-white;
-}
-
-/* Scrollbar styles */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-slate-900;
+  background: #090d16;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-red-600 rounded-full hover:bg-red-500;
+  background: #dc2626;
+  border-radius: 9999px;
 }
 
-/* Netflix-style gradient */
-.bg-gradient-netflix {
-  @apply bg-gradient-to-r from-red-600 via-red-600 to-red-700;
+::-webkit-scrollbar-thumb:hover {
+  background: #ef4444;
 }
 
-.text-gradient-netflix {
-  @apply bg-gradient-to-r from-red-500 to-red-600 bg-clip-text text-transparent;
+/* Streaming & Glassmorphism Utilities */
+@layer utilities {
+  .bg-gradient-netflix {
+    background: linear-gradient(135deg, #e50914 0%, #b81d24 100%);
+  }
+
+  .text-gradient-netflix {
+    background: linear-gradient(135deg, #ff4d4d 0%, #e50914 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .glass-panel {
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
 }

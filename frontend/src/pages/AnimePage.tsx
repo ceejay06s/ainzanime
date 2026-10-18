@@ -20,6 +20,7 @@ export const AnimePage: React.FC = () => {
 
   const isLoading = searchQuery ? searchLoading : trendingLoading;
   const anime = (searchQuery ? searchData?.data : trendingData?.data) || [];
+  const hasNextPage = anime.length >= 24;
 
   const handleSearch = (query: string) => {
     setPage(1);
@@ -31,7 +32,7 @@ export const AnimePage: React.FC = () => {
   };
 
   const handleAnimeClick = (id: number) => {
-    const selected = anime.find((a) => a.mal_id === id);
+    const selected = anime.find((a: Anime) => a.mal_id === id);
     if (selected) {
       setSelectedAnime(selected);
       setIsModalOpen(true);
@@ -40,24 +41,38 @@ export const AnimePage: React.FC = () => {
 
   return (
     <>
-      <Hero title="Explore Anime" subtitle="Find your next favorite series" >
+      <Hero
+        title="Explore Anime Catalog"
+        subtitle="Search thousands of titles, filter by popularity, or discover new releases"
+      >
         <div className="max-w-md mx-auto">
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar onSearch={handleSearch} placeholder="Search by title, genre, studio..." />
         </div>
       </Hero>
 
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-6 flex items-center justify-between">
+          <p className="text-sm text-slate-400">
+            {searchQuery ? (
+              <>Showing results for <span className="font-semibold text-white">"{searchQuery}"</span></>
+            ) : (
+              'All Anime Releases'
+            )}
+          </p>
+        </div>
+
         <AnimeGrid
           anime={anime}
           isLoading={isLoading}
           onAnimeClick={handleAnimeClick}
-          emptyMessage={searchQuery ? `No results for "${searchQuery}"` : 'Loading anime...'}
+          emptyMessage={searchQuery ? `No anime found matching "${searchQuery}"` : 'Loading anime catalog...'}
         />
 
         <Pagination
           currentPage={page}
           onPageChange={setPage}
           isLoading={isLoading}
+          hasNextPage={hasNextPage}
         />
       </div>
 

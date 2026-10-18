@@ -15,25 +15,25 @@ export const Pagination: React.FC<PaginationProps> = ({
   hasNextPage = true
 }) => {
   return (
-    <div className="flex items-center justify-center gap-4 mt-12">
+    <div className="flex items-center justify-center gap-3 mt-12">
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1 || isLoading}
-        className="flex items-center gap-2 rounded-lg bg-gradient-netflix px-4 py-2 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition"
+        className="flex items-center gap-1.5 rounded-xl bg-gradient-netflix px-4 py-2.5 text-sm font-semibold text-white shadow-md disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-95 transition-all"
       >
-        <ChevronLeft className="h-5 w-5" />
+        <ChevronLeft className="h-4 w-4" />
         Previous
       </button>
-      <span className="px-4 py-2 rounded-lg bg-slate-800 text-white font-medium">
+      <span className="px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-sm font-semibold shadow-inner">
         Page {currentPage}
       </span>
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={isLoading || !hasNextPage}
-        className="flex items-center gap-2 rounded-lg bg-gradient-netflix px-4 py-2 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition"
+        className="flex items-center gap-1.5 rounded-xl bg-gradient-netflix px-4 py-2.5 text-sm font-semibold text-white shadow-md disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-95 transition-all"
       >
         Next
-        <ChevronRight className="h-5 w-5" />
+        <ChevronRight className="h-4 w-4" />
       </button>
     </div>
   );

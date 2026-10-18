@@ -4,14 +4,14 @@ import { Home, Flame, BookOpen, TrendingUp, Heart } from 'lucide-react';
 
 export const Header: React.FC = () => {
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-lg shadow-lg shadow-black/20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-netflix">
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-netflix shadow-md shadow-red-600/30 group-hover:scale-105 transition-transform">
               <Flame className="h-6 w-6 text-white" />
             </div>
-            <span className="hidden font-bold text-white sm:inline text-xl">AinzAnime</span>
+            <span className="font-heading font-extrabold text-white text-xl tracking-wide group-hover:text-red-400 transition-colors">Ainz<span className="text-red-500">Anime</span></span>
           </Link>
 
           <nav className="flex items-center gap-1">

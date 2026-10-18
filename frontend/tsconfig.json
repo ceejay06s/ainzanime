@@ -14,7 +14,8 @@
     "jsx": "react-jsx",
     "jsxImportSource": "react",
     "resolveJsonModule": true,
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "noEmit": true
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

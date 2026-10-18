@@ -5,7 +5,7 @@ const cache = new NodeCache({ stdTTL: 1800 }); // 30 minutes cache
 
 const ANILIST_URL = 'https://graphql.anilist.co';
 const KITSU_URL = 'https://kitsu.io/api/edge';
-const MIRURO_URL = 'https://www.miruro.com';
+const MIRURO_URL = 'https://www.miruro.tv';
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
@@ -188,7 +188,7 @@ export const animeService = {
               return {
                 name: item.name,
                 url: infoUrl,
-                watchUrl: watchUrl || `https://www.miruro.com/search?q=${encodeURIComponent(item.name)}`
+                watchUrl: watchUrl || `https://www.miruro.tv/search?q=${encodeURIComponent(item.name)}`
               };
             });
 
@@ -563,7 +563,7 @@ export const animeService = {
       const episodes = [];
       for (let ep = startEp; ep <= endEp; ep++) {
         const streamingEp = streamingMap.get(ep);
-        const miruroWatchUrl = `https://www.miruro.com/search?q=${encodeURIComponent(title)}`;
+        const miruroWatchUrl = `https://www.miruro.tv/search?q=${encodeURIComponent(title)}`;
 
         episodes.push({
           mal_id: ep,
@@ -641,7 +641,7 @@ export const animeService = {
 
     let watchBase =
       scrapedWatchUrl ||
-      `https://www.miruro.com/search?q=${encodeURIComponent(title)}`;
+      `https://www.miruro.tv/search?q=${encodeURIComponent(title)}`;
 
     // Prefer /watch/ over /info/ when we have a scraped Miruro link
     watchBase = watchBase.replace('/info/', '/watch/');
@@ -649,7 +649,7 @@ export const animeService = {
     try {
       const parsed = new URL(watchBase);
       if (parsed.hostname === 'www.miruro.tv' || parsed.hostname === 'miruro.tv') {
-        parsed.hostname = parsed.hostname.startsWith('www.') ? 'www.miruro.com' : 'miruro.com';
+        parsed.hostname = parsed.hostname.startsWith('www.') ? 'www.miruro.tv' : 'miruro.tv';
       }
       if (parsed.pathname.startsWith('/watch/')) {
         parsed.searchParams.set('ep', String(episode));
@@ -660,7 +660,7 @@ export const animeService = {
     }
 
     if (slug) {
-      return `https://www.miruro.com/search?q=${encodeURIComponent(title)}&ep=${episode}`;
+      return `https://www.miruro.tv/search?q=${encodeURIComponent(title)}&ep=${episode}`;
     }
 
     return watchBase;
@@ -888,7 +888,7 @@ export const animeService = {
     const matchedWatchUrl =
       miruroSlugMap?.get(displayTitle.toLowerCase()) ||
       miruroSlugMap?.get(romajiTitle.toLowerCase()) ||
-      `https://www.miruro.com/search?q=${encodeURIComponent(displayTitle)}`;
+      `https://www.miruro.tv/search?q=${encodeURIComponent(displayTitle)}`;
 
     return {
       mal_id: malId,
@@ -960,7 +960,7 @@ export const animeService = {
     const displayTitle = attr.canonicalTitle || attr.titles?.en || attr.titles?.en_jp || 'Untitled';
     const coverLarge = attr.posterImage?.large || attr.posterImage?.original || '';
     const coverSmall = attr.posterImage?.medium || coverLarge;
-    const miruroUrl = `https://www.miruro.com/search?q=${encodeURIComponent(displayTitle)}`;
+    const miruroUrl = `https://www.miruro.tv/search?q=${encodeURIComponent(displayTitle)}`;
 
     return {
       mal_id: parseInt(item.id, 10) || 1,

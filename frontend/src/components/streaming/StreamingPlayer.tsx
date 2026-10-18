@@ -48,11 +48,11 @@ export const StreamingPlayer: React.FC<StreamingPlayerProps> = ({
     if (server?.embedUrl) return server.embedUrl;
     if (server?.url) return server.url;
     if (server?.id === 'miruro' && episode) {
-      return `https://www.miruro.com/search?q=${encodeURIComponent(animeTitle)}&ep=${episode.number}`;
+      return `https://www.miruro.tv/search?q=${encodeURIComponent(animeTitle)}&ep=${episode.number}`;
     }
     if (episode?.streamUrl) return episode.streamUrl;
     if (episode?.url) return episode.url;
-    return `https://www.miruro.com/search?q=${encodeURIComponent(animeTitle)}`;
+    return `https://www.miruro.tv/search?q=${encodeURIComponent(animeTitle)}`;
   }, [server, episode, animeTitle]);
 
   const isEmbeddable = React.useMemo(() => {

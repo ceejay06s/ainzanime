@@ -47,19 +47,17 @@ export const StreamingPlayer: React.FC<StreamingPlayerProps> = ({
   const streamUrl = React.useMemo(() => {
     if (server?.embedUrl) return server.embedUrl;
     if (server?.url) return server.url;
+    if (server?.id === 'miruro' && episode) {
+      return `https://www.miruro.com/search?q=${encodeURIComponent(animeTitle)}&ep=${episode.number}`;
+    }
     if (episode?.streamUrl) return episode.streamUrl;
     if (episode?.url) return episode.url;
-    return `https://www.miruro.tv/search?q=${encodeURIComponent(animeTitle)}`;
+    return `https://www.miruro.com/search?q=${encodeURIComponent(animeTitle)}`;
   }, [server, episode, animeTitle]);
 
   const isEmbeddable = React.useMemo(() => {
     if (!server) return true;
-    if (server.isEmbeddable === false) return false;
-    // Miruro TV URLs strictly set X-Frame-Options: SAMEORIGIN
-    if (server.url?.includes('miruro.tv') && (!server.embedUrl || server.embedUrl.includes('miruro.tv'))) {
-      return false;
-    }
-    return true;
+    return server.isEmbeddable !== false;
   }, [server]);
 
   // Reset iframe state when episode or server changes

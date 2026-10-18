@@ -5,7 +5,7 @@ const cache = new NodeCache({ stdTTL: 1800 }); // 30 minutes cache
 
 const ANILIST_URL = 'https://graphql.anilist.co';
 const KITSU_URL = 'https://kitsu.io/api/edge';
-const MIRURO_URL = 'https://www.miruro.tv';
+const MIRURO_URL = 'https://www.miruro.com';
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
@@ -164,7 +164,7 @@ export interface MiruroItem {
 
 export const animeService = {
   /**
-   * Scrapes real-time Trending Anime directly from miruro.tv
+   * Scrapes real-time Trending Anime directly from Miruro.
    */
   async scrapeMiruroTrending(): Promise<MiruroItem[]> {
     const cacheKey = 'miruro_trending_scraped';
@@ -188,7 +188,7 @@ export const animeService = {
               return {
                 name: item.name,
                 url: infoUrl,
-                watchUrl: watchUrl || `https://www.miruro.tv/search?q=${encodeURIComponent(item.name)}`
+                watchUrl: watchUrl || `https://www.miruro.com/search?q=${encodeURIComponent(item.name)}`
               };
             });
 
@@ -563,7 +563,7 @@ export const animeService = {
       const episodes = [];
       for (let ep = startEp; ep <= endEp; ep++) {
         const streamingEp = streamingMap.get(ep);
-        const miruroWatchUrl = `https://www.miruro.tv/search?q=${encodeURIComponent(title)}`;
+        const miruroWatchUrl = `https://www.miruro.com/search?q=${encodeURIComponent(title)}`;
 
         episodes.push({
           mal_id: ep,
@@ -628,7 +628,6 @@ export const animeService = {
   /**
    * Build a Miruro watch URL for an episode.
    * Prefers scraped /watch/{id}/{slug} links, then falls back to search.
-   * Miruro's player origin (strm.cx) is used as the in-app embed shell.
    */
   buildMiruroWatchUrl(title: string, episode: number, scrapedWatchUrl?: string) {
     const slug = title
@@ -642,13 +641,16 @@ export const animeService = {
 
     let watchBase =
       scrapedWatchUrl ||
-      `https://www.miruro.tv/search?q=${encodeURIComponent(title)}`;
+      `https://www.miruro.com/search?q=${encodeURIComponent(title)}`;
 
     // Prefer /watch/ over /info/ when we have a scraped Miruro link
     watchBase = watchBase.replace('/info/', '/watch/');
 
     try {
       const parsed = new URL(watchBase);
+      if (parsed.hostname === 'www.miruro.tv' || parsed.hostname === 'miruro.tv') {
+        parsed.hostname = parsed.hostname.startsWith('www.') ? 'www.miruro.com' : 'miruro.com';
+      }
       if (parsed.pathname.startsWith('/watch/')) {
         parsed.searchParams.set('ep', String(episode));
         return parsed.toString();
@@ -658,39 +660,17 @@ export const animeService = {
     }
 
     if (slug) {
-      return `https://www.miruro.tv/search?q=${encodeURIComponent(title)}&ep=${episode}`;
+      return `https://www.miruro.com/search?q=${encodeURIComponent(title)}&ep=${episode}`;
     }
 
     return watchBase;
   },
 
   /**
-   * Miruro serves its embeddable player from strm.cx (no X-Frame-Options).
-   * Host/type query params deep-link Sun (icarus) / Bee (anikoto) + sub/dub.
-   */
-  buildMiruroPlayerEmbedUrl(
-    title: string,
-    episode: number,
-    host: 'icarus' | 'anikoto',
-    type: 'sub' | 'dub',
-    scrapedWatchUrl?: string
-  ) {
-    const watchUrl = this.buildMiruroWatchUrl(title, episode, scrapedWatchUrl);
-    const embed = new URL('https://strm.cx/');
-    embed.searchParams.set('embed', '1');
-    embed.searchParams.set('host', host);
-    embed.searchParams.set('type', type);
-    embed.searchParams.set('ep', String(episode));
-    embed.searchParams.set('title', title);
-    embed.searchParams.set('src', watchUrl);
-    return embed.toString();
-  },
-
-  /**
    * Get available streaming servers/sources for a specific anime episode
    */
   async getStreamingSources(animeId: number, episode: number) {
-    const cacheKey = `streaming_sources_v2_${animeId}_${episode}`;
+    const cacheKey = `streaming_sources_v3_${animeId}_${episode}`;
     const cached = cache.get(cacheKey);
     if (cached) return cached;
 
@@ -724,40 +704,10 @@ export const animeService = {
       }
 
       const miruroWatchUrl = this.buildMiruroWatchUrl(title, episode, scrapedMiruroUrl);
-      const miruroSearchUrl = `https://www.miruro.tv/search?q=${encodeURIComponent(title)}`;
       const vidsrcEmbedUrl = `https://vidsrc.me/embed/anime?id=${animeId}&ep=${episode}`;
       const twoEmbedUrl = `https://2embed.cc/embed/anime/${animeId}/${episode}`;
 
-      const miruroSunEmbed = this.buildMiruroPlayerEmbedUrl(
-        title,
-        episode,
-        'icarus',
-        'sub',
-        scrapedMiruroUrl
-      );
-      const miruroSunDubEmbed = this.buildMiruroPlayerEmbedUrl(
-        title,
-        episode,
-        'icarus',
-        'dub',
-        scrapedMiruroUrl
-      );
-      const miruroBeeEmbed = this.buildMiruroPlayerEmbedUrl(
-        title,
-        episode,
-        'anikoto',
-        'sub',
-        scrapedMiruroUrl
-      );
-      const miruroBeeDubEmbed = this.buildMiruroPlayerEmbedUrl(
-        title,
-        episode,
-        'anikoto',
-        'dub',
-        scrapedMiruroUrl
-      );
-
-      // Streaming servers: In-app iframe players (VidSrc/2Embed + Miruro strm.cx player)
+      // Miruro's own watch page hosts its source and audio selectors inside the iframe.
       const servers = [
         {
           id: 'vidsrc-embed',
@@ -782,46 +732,13 @@ export const animeService = {
           active: true
         },
         {
-          id: 'icarus-sub',
-          name: 'Miruro Sun',
-          label: 'In-App Player (Icarus)',
+          id: 'miruro',
+          name: 'Miruro',
+          label: 'Miruro Native Player',
           type: 'sub' as const,
           quality: '1080p',
           isEmbeddable: true,
-          embedUrl: miruroSunEmbed,
-          url: miruroWatchUrl,
-          active: true
-        },
-        {
-          id: 'icarus-dub',
-          name: 'Miruro Sun (Dub)',
-          label: 'In-App Player (Icarus Dub)',
-          type: 'dub' as const,
-          quality: '1080p',
-          isEmbeddable: true,
-          embedUrl: miruroSunDubEmbed,
-          url: miruroWatchUrl,
-          active: true
-        },
-        {
-          id: 'anikoto-sub',
-          name: 'Miruro Bee',
-          label: 'In-App Player (Anikoto)',
-          type: 'sub' as const,
-          quality: '1080p',
-          isEmbeddable: true,
-          embedUrl: miruroBeeEmbed,
-          url: miruroWatchUrl,
-          active: true
-        },
-        {
-          id: 'anikoto-dub',
-          name: 'Miruro Bee (Dub)',
-          label: 'In-App Player (Anikoto Dub)',
-          type: 'dub' as const,
-          quality: '1080p',
-          isEmbeddable: true,
-          embedUrl: miruroBeeDubEmbed,
+          embedUrl: miruroWatchUrl,
           url: miruroWatchUrl,
           active: true
         },
@@ -851,7 +768,7 @@ export const animeService = {
         servers,
         defaultServer: 'vidsrc-embed',
         embedUrl: vidsrcEmbedUrl,
-        miruroUrl: miruroWatchUrl || miruroSearchUrl,
+        miruroUrl: miruroWatchUrl,
         animepaheUrl: `https://animepahe.ru/?q=${encodeURIComponent(title)}`,
         episode: {
           number: episode,
@@ -971,7 +888,7 @@ export const animeService = {
     const matchedWatchUrl =
       miruroSlugMap?.get(displayTitle.toLowerCase()) ||
       miruroSlugMap?.get(romajiTitle.toLowerCase()) ||
-      `https://www.miruro.tv/search?q=${encodeURIComponent(displayTitle)}`;
+      `https://www.miruro.com/search?q=${encodeURIComponent(displayTitle)}`;
 
     return {
       mal_id: malId,
@@ -1043,7 +960,7 @@ export const animeService = {
     const displayTitle = attr.canonicalTitle || attr.titles?.en || attr.titles?.en_jp || 'Untitled';
     const coverLarge = attr.posterImage?.large || attr.posterImage?.original || '';
     const coverSmall = attr.posterImage?.medium || coverLarge;
-    const miruroUrl = `https://www.miruro.tv/search?q=${encodeURIComponent(displayTitle)}`;
+    const miruroUrl = `https://www.miruro.com/search?q=${encodeURIComponent(displayTitle)}`;
 
     return {
       mal_id: parseInt(item.id, 10) || 1,

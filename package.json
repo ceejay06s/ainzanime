@@ -4,6 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start-backend": "pnpm --prefix backend run dev",
+    "start-frontend": "pnpm --prefix frontend run dev",
+    "build-backend": "pnpm --prefix backend run build",
+    "build-frontend": "pnpm --prefix frontend run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

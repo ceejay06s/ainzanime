@@ -626,27 +626,138 @@ export const animeService = {
   },
 
   /**
+   * Build a Miruro watch URL for an episode.
+   * Prefers scraped /watch/{id}/{slug} links, then falls back to search.
+   * Miruro's player origin (strm.cx) is used as the in-app embed shell.
+   */
+  buildMiruroWatchUrl(title: string, episode: number, scrapedWatchUrl?: string) {
+    const slug = title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+
+    let watchBase =
+      scrapedWatchUrl ||
+      `https://www.miruro.tv/search?q=${encodeURIComponent(title)}`;
+
+    // Prefer /watch/ over /info/ when we have a scraped Miruro link
+    watchBase = watchBase.replace('/info/', '/watch/');
+
+    try {
+      const parsed = new URL(watchBase);
+      if (parsed.pathname.startsWith('/watch/')) {
+        parsed.searchParams.set('ep', String(episode));
+        return parsed.toString();
+      }
+    } catch {
+      // ignore malformed scraped URLs
+    }
+
+    if (slug) {
+      return `https://www.miruro.tv/search?q=${encodeURIComponent(title)}&ep=${episode}`;
+    }
+
+    return watchBase;
+  },
+
+  /**
+   * Miruro serves its embeddable player from strm.cx (no X-Frame-Options).
+   * Host/type query params deep-link Sun (icarus) / Bee (anikoto) + sub/dub.
+   */
+  buildMiruroPlayerEmbedUrl(
+    title: string,
+    episode: number,
+    host: 'icarus' | 'anikoto',
+    type: 'sub' | 'dub',
+    scrapedWatchUrl?: string
+  ) {
+    const watchUrl = this.buildMiruroWatchUrl(title, episode, scrapedWatchUrl);
+    const embed = new URL('https://strm.cx/');
+    embed.searchParams.set('embed', '1');
+    embed.searchParams.set('host', host);
+    embed.searchParams.set('type', type);
+    embed.searchParams.set('ep', String(episode));
+    embed.searchParams.set('title', title);
+    embed.searchParams.set('src', watchUrl);
+    return embed.toString();
+  },
+
+  /**
    * Get available streaming servers/sources for a specific anime episode
    */
   async getStreamingSources(animeId: number, episode: number) {
-    const cacheKey = `streaming_sources_v1_${animeId}_${episode}`;
+    const cacheKey = `streaming_sources_v2_${animeId}_${episode}`;
     const cached = cache.get(cacheKey);
     if (cached) return cached;
 
     try {
-      // Get anime details for title
+      // Get anime details for title + any known Miruro watch link
       let title = 'Anime';
+      let scrapedMiruroUrl = '';
       try {
         const details: any = await this.getAnimeDetails(animeId);
-        title = details?.data?.title || 'Anime';
+        title = details?.data?.title || details?.data?.title_english || 'Anime';
+        scrapedMiruroUrl = details?.data?.miruro_url || '';
       } catch {
         // Fallback
       }
+
+      // Enrich with live Miruro trending watch URLs when title matches
+      if (!scrapedMiruroUrl || scrapedMiruroUrl.includes('/search')) {
+        try {
+          const miruroItems = await this.scrapeMiruroTrending();
+          const match = miruroItems.find(
+            (item) =>
+              item.name.toLowerCase() === title.toLowerCase() ||
+              item.watchUrl.toLowerCase().includes(
+                title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+              )
+          );
+          if (match?.watchUrl) scrapedMiruroUrl = match.watchUrl;
+        } catch {
+          // optional enrichment
+        }
+      }
+
+      const miruroWatchUrl = this.buildMiruroWatchUrl(title, episode, scrapedMiruroUrl);
       const miruroSearchUrl = `https://www.miruro.tv/search?q=${encodeURIComponent(title)}`;
       const vidsrcEmbedUrl = `https://vidsrc.me/embed/anime?id=${animeId}&ep=${episode}`;
       const twoEmbedUrl = `https://2embed.cc/embed/anime/${animeId}/${episode}`;
 
-      // Streaming servers: In-app iframe embeddable players + Miruro direct stream variants
+      const miruroSunEmbed = this.buildMiruroPlayerEmbedUrl(
+        title,
+        episode,
+        'icarus',
+        'sub',
+        scrapedMiruroUrl
+      );
+      const miruroSunDubEmbed = this.buildMiruroPlayerEmbedUrl(
+        title,
+        episode,
+        'icarus',
+        'dub',
+        scrapedMiruroUrl
+      );
+      const miruroBeeEmbed = this.buildMiruroPlayerEmbedUrl(
+        title,
+        episode,
+        'anikoto',
+        'sub',
+        scrapedMiruroUrl
+      );
+      const miruroBeeDubEmbed = this.buildMiruroPlayerEmbedUrl(
+        title,
+        episode,
+        'anikoto',
+        'dub',
+        scrapedMiruroUrl
+      );
+
+      // Streaming servers: In-app iframe players (VidSrc/2Embed + Miruro strm.cx player)
       const servers = [
         {
           id: 'vidsrc-embed',
@@ -673,41 +784,45 @@ export const animeService = {
         {
           id: 'icarus-sub',
           name: 'Miruro Sun',
-          label: 'Direct Stream (Icarus)',
+          label: 'In-App Player (Icarus)',
           type: 'sub' as const,
           quality: '1080p',
-          isEmbeddable: false,
-          url: miruroSearchUrl,
+          isEmbeddable: true,
+          embedUrl: miruroSunEmbed,
+          url: miruroWatchUrl,
           active: true
         },
         {
           id: 'icarus-dub',
           name: 'Miruro Sun (Dub)',
-          label: 'Direct Stream (Icarus Dub)',
+          label: 'In-App Player (Icarus Dub)',
           type: 'dub' as const,
           quality: '1080p',
-          isEmbeddable: false,
-          url: miruroSearchUrl,
+          isEmbeddable: true,
+          embedUrl: miruroSunDubEmbed,
+          url: miruroWatchUrl,
           active: true
         },
         {
           id: 'anikoto-sub',
           name: 'Miruro Bee',
-          label: 'Direct Stream (Anikoto)',
+          label: 'In-App Player (Anikoto)',
           type: 'sub' as const,
           quality: '1080p',
-          isEmbeddable: false,
-          url: miruroSearchUrl,
+          isEmbeddable: true,
+          embedUrl: miruroBeeEmbed,
+          url: miruroWatchUrl,
           active: true
         },
         {
           id: 'anikoto-dub',
           name: 'Miruro Bee (Dub)',
-          label: 'Direct Stream (Anikoto Dub)',
+          label: 'In-App Player (Anikoto Dub)',
           type: 'dub' as const,
           quality: '1080p',
-          isEmbeddable: false,
-          url: miruroSearchUrl,
+          isEmbeddable: true,
+          embedUrl: miruroBeeDubEmbed,
+          url: miruroWatchUrl,
           active: true
         },
         {
@@ -736,7 +851,7 @@ export const animeService = {
         servers,
         defaultServer: 'vidsrc-embed',
         embedUrl: vidsrcEmbedUrl,
-        miruroUrl: miruroSearchUrl,
+        miruroUrl: miruroWatchUrl || miruroSearchUrl,
         animepaheUrl: `https://animepahe.ru/?q=${encodeURIComponent(title)}`,
         episode: {
           number: episode,
